@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import type { AuthState, User } from '../types/auth';
 import { clearAuth, readAuth, saveAuth } from '../auth/tokenStorage';
+import { loginApi } from '../auth/authApi';
+import type { AuthState } from '../types/auth';
 
 type AuthActions = {
   hydrate: () => Promise<void>;
-  signInLocal: (email: string) => Promise<void>; // mock login por ahora
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -26,12 +27,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
 
-  signInLocal: async (email: string) => {
+  signIn: async (email: string, password: string) => {
     set({ loading: true });
-    const fakeToken = `local-token-${Date.now()}`;
-    const user: User = { id: 'local-user', email, name: 'Local User' };
-    await saveAuth(fakeToken, user);
-    set({ token: fakeToken, user, loading: false });
+    const data = await loginApi({ email, password });
+    await saveAuth(data.accessToken, data.user);
+    set({ token: data.accessToken, user: data.user, loading: false });
   },
 
   signOut: async () => {

@@ -1,15 +1,25 @@
 import { useState } from 'react';
-import { ActivityIndicator, Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuthStore } from '../../shared/store/authStore';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('demo@hermetic.app');
-  const signInLocal = useAuthStore((s) => s.signInLocal);
+  const [password, setPassword] = useState('demo1234');
+  const signIn = useAuthStore((s) => s.signIn);
   const loading = useAuthStore((s) => s.loading);
-return (
+
+  const onSubmit = async () => {
+    try {
+      await signIn(email.trim(), password);
+    } catch (e: any) {
+      Alert.alert('Login error', e?.message ?? 'Unknown error');
+    }
+  };
+
+  return (
     <View style={styles.container}>
       <Text style={styles.title}>Hermetic Mobile</Text>
-      <Text style={styles.subtitle}>Login local MVP</Text>
+      <Text style={styles.subtitle}>Login API</Text>
 
       <TextInput
         value={email}
@@ -20,11 +30,15 @@ return (
         style={styles.input}
       />
 
-      {loading ? (
-        <ActivityIndicator />
-      ) : (
-        <Button title="Entrar" onPress={() => signInLocal(email.trim())} />
-      )}
+      <TextInput
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        placeholder="password"
+        style={styles.input}
+      />
+
+      {loading ? <ActivityIndicator /> : <Button title="Entrar" onPress={onSubmit} />}
     </View>
   );
 }

@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { User } from '../types/auth';
 
 const TOKEN_KEY = 'hermetic.auth.token';
 const USER_KEY = 'hermetic.auth.user';
 
-export async function saveAuth(token: string, user: unknown) {
+export async function saveAuth(token: string, user: User) {
   await AsyncStorage.multiSet([
     [TOKEN_KEY, token],
     [USER_KEY, JSON.stringify(user)],
@@ -11,11 +12,11 @@ export async function saveAuth(token: string, user: unknown) {
 }
 
 export async function readAuth() {
-  const [token, user] = await AsyncStorage.multiGet([TOKEN_KEY, USER_KEY]);
-  return {
-    token: token?.[1] ?? null,
-    user: user?.[1] ? JSON.parse(user[1]) : null,
-  };
+  const entries = await AsyncStorage.multiGet([TOKEN_KEY, USER_KEY]);
+  const token = entries.find(([k]) => k === TOKEN_KEY)?.[1] ?? null;
+  const userRaw = entries.find(([k]) => k === USER_KEY)?.[1] ?? null;
+  const user = userRaw ? JSON.parse(userRaw) : null;
+  return { token, user };
 }
 
 export async function clearAuth() {

@@ -10,9 +10,15 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${ENV.API_URL}${path}`, { ...init, headers });
+
+  if (res.status === 401) {
+    await useAuthStore.getState().signOut();
+    throw new Error('Session expired (401)');
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`API ${res.status}: ${text || res.statusText}`);
+throw new Error(`API ${res.status}: ${text || res.statusText}`);
   }
 
   const ct = res.headers.get('content-type') || '';
