@@ -1,0 +1,8 @@
+.env
+uploads/
+data/
+*.pdf
+*.xlsx
+*.png
+*.jpg
+.aider*
