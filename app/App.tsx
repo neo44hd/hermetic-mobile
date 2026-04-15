@@ -16,7 +16,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const hydrated = useAuthStore((s) => s.hydrated);
-  const token = useAuthStore((s) => s.token);
+  const accessToken = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
     hydrate();
@@ -33,7 +33,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        {token ? (
+        {accessToken ? (
           <Stack.Screen name="Home" component={HomeScreen} />
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />

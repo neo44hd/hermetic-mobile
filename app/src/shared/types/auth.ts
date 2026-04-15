@@ -1,11 +1,15 @@
+export type Role = 'admin' | 'user';
+
 export type User = {
   id: string;
   email: string;
   name?: string;
+  role?: Role;
 };
 
 export type AuthState = {
-  token: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   user: User | null;
   hydrated: boolean;
   loading: boolean;
@@ -18,5 +22,10 @@ export type LoginRequest = {
 
 export type LoginResponse = {
   accessToken: string;
+  refreshToken: string;
   user: User;
+};
+
+export type RefreshResponse = {
+  accessToken: string;
 };
