@@ -1,18 +1,20 @@
 import { create } from 'zustand';
-import { clearAuth, readAuth, saveAuth } from '../auth/tokenStorage';
-import { loginApi } from '../auth/authApi';
-import type { AuthState } from '../types/auth';
+import { clearAuth, readAuth, saveAccessToken, saveAuth } from '../auth/tokenStorage';
+import { loginApi, meApi } from '../auth/authApi';
+import type { AuthState, Role } from '../types/auth';
 
 type AuthActions = {
   hydrate: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  hasRole: (roles: Role[]) => boolean;
+  setAccessToken: (token: string) => Promise<void>;
 };
 
 type AuthStore = AuthState & AuthActions;
-
-export const useAuthStore = create<AuthStore>((set) => ({
-  token: null,
+export const useAuthStore = create<AuthStore>((set, get) => ({
+  accessToken: null,
+  refreshToken: null,
   user: null,
   hydrated: false,
   loading: false,
@@ -20,23 +22,79 @@ export const useAuthStore = create<AuthStore>((set) => ({
   hydrate: async () => {
     set({ loading: true });
     try {
-      const { token, user } = await readAuth();
-      set({ token, user, hydrated: true, loading: false });
+      const { accessToken, user } = await readAuth();
+
+      if (accessToken) {
+        try {
+          const freshUser = await meApi(accessToken);
+          set({
+            accessToken,
+            refreshToken: null,
+            user: freshUser,
+            hydrated: true,
+            loading: false,
+          });
+          return;
+        } catch {
+          await clearAuth();
+        }
+      }
+
+      set({
+        accessToken: null,
+        refreshToken: null,
+        user: null,
+        hydrated: true,
+        loading: false,
+      });
     } catch {
-      set({ hydrated: true, loading: false });
+      set({
+        accessToken: null,
+        refreshToken: null,
+        user: null,
+        hydrated: true,
+        loading: false,
+      });
     }
   },
 
   signIn: async (email: string, password: string) => {
     set({ loading: true });
-    const data = await loginApi({ email, password });
-    await saveAuth(data.accessToken, data.user);
-    set({ token: data.accessToken, user: data.user, loading: false });
+    try {
+      const data = await loginApi({ email, password });
+      await saveAuth(data.token, '', data.user);
+      set({
+        accessToken: data.token,
+        refreshToken: null,
+        user: data.user,
+        loading: false,
+      });
+    } catch (e) {
+      set({ loading: false });
+      throw e;
+    }
   },
 
   signOut: async () => {
     set({ loading: true });
     await clearAuth();
-    set({ token: null, user: null, loading: false });
+    set({
+      accessToken: null,
+      refreshToken: null,
+      user: null,
+      hydrated: true,
+      loading: false,
+    });
+  },
+
+  hasRole: (roles: Role[]) => {
+    const role = get().user?.role;
+    if (!role) return false;
+    return roles.includes(role);
+  },
+
+  setAccessToken: async (token: string) => {
+    await saveAccessToken(token);
+    set({ accessToken: token });
   },
 }));
